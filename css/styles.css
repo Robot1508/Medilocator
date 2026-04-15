@@ -1,0 +1,131 @@
+body {
+  font-family: "Poppins", sans-serif;
+  background: #f8f9fc;
+  color: #333;
+}
+
+/* Navbar */
+.navbar {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+.navbar-brand {
+  font-weight: 700;
+  color: #fff !important;
+}
+.navbar .form-control {
+  border-radius: 25px;
+  border: none;
+}
+.navbar .btn {
+  border-radius: 25px;
+}
+
+/* Unified Filter Bar */
+.filter-bar {
+  background: #fff;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+  padding: 10px 20px;
+  position: sticky;
+  top: 65px;
+  z-index: 1040;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.filter-content {
+  display: none;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+.filter-content select {
+  border-radius: 10px;
+  padding: 6px 10px;
+  border: 1px solid #ccc;
+  font-size: 0.9rem;
+}
+.filter-toggle {
+  background: #6c63ff;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 8px 18px;
+  font-weight: 500;
+  transition: 0.3s;
+}
+.filter-toggle:hover {
+  background: #5848d3;
+}
+
+/* Hero */
+.hero {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  text-align: center;
+  padding: 90px 0;
+}
+.hero h1 {
+  font-weight: 700;
+}
+.hero p {
+  font-size: 1.1rem;
+}
+
+/* Map */
+#map {
+  width: 100%;
+  height: 400px;
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  margin-bottom: 10px;
+}
+
+/* Results */
+.results-section {
+  padding: 40px 0;
+}
+.hospital-card {
+  border: none;
+  border-radius: 15px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+  margin-bottom: 15px;
+  transition: transform 0.3s ease;
+}
+.hospital-card:hover {
+  transform: translateY(-5px);
+}
+.badge-status {
+  font-size: 0.85rem;
+  padding: 5px 10px;
+  border-radius: 12px;
+}
+#countdown {
+  text-align: center;
+  font-weight: 600;
+  color: #6c63ff;
+  margin-top: 10px;
+}
+
+/* Notification Popup */
+.alert-popup {
+  position: fixed;
+  bottom: 25px;
+  right: 25px;
+  background: #dc3545;
+  color: white;
+  padding: 15px 20px;
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  display: none;
+  z-index: 9999;
+  font-weight: 600;
+}
+
+/* Footer */
+footer {
+  background: linear-gradient(135deg, #343a40, #495057);
+  color: white;
+  text-align: center;
+  padding: 40px 0;
+}

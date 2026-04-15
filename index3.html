@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MediLocator - Smart Hospital Finder</title>
+
+<!-- Bootstrap + Icons + Fonts -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet" />
+
+<style>
+body {
+  font-family: "Poppins", sans-serif;
+  background: #f8f9fc;
+  color: #333;
+}
+.navbar {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+.navbar-brand { font-weight: 700; color: #fff !important; }
+.hero {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white; text-align: center; padding: 90px 0;
+}
+#map { width: 100%; height: 400px; border-radius: 20px; margin-bottom: 10px; }
+.hospital-card {
+  border: none; border-radius: 15px;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+  margin-bottom: 15px;
+}
+.filter-bar {
+  background: #fff;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+  padding: 10px 20px;
+  position: sticky; top: 65px; z-index: 1040;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.filter-content {
+  display: none; flex-wrap: wrap; gap: 10px; margin-top: 10px;
+}
+.filter-toggle {
+  background: #6c63ff; color: white;
+  border: none; border-radius: 10px;
+  padding: 8px 18px; font-weight: 500;
+}
+footer {
+  background: linear-gradient(135deg, #343a40, #495057);
+  color: white; text-align: center; padding: 40px 0;
+}
+</style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+  <div class="container">
+    <a class="navbar-brand" href="#"><i class="fas fa-hospital"></i> MediLocator</a>
+    <form class="d-flex mx-auto" role="search">
+      <input class="form-control me-2" type="search" placeholder="Search hospitals..." aria-label="Search">
+      <button class="btn btn-light" type="submit"><i class="fas fa-search"></i></button>
+    </form>
+    <ul class="navbar-nav ms-auto">
+      <li class="nav-item me-2">
+        <button class="btn btn-outline-light" data-bs-toggle="modal" data-bs-target="#userModal">
+          <i class="fas fa-user"></i>
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="btn btn-outline-light" data-bs-toggle="modal" data-bs-target="#adminModal">
+          <i class="fas fa-user-shield"></i>
+        </button>
+      </li>
+    </ul>
+  </div>
+</nav>
+
+<!-- Filter Bar -->
+<div class="filter-bar container-fluid">
+  <button class="filter-toggle" id="filterBtn"><i class="fas fa-filter"></i> Filters</button>
+</div>
+
+<div class="container">
+  <div class="filter-content" id="filterContent">
+
+    <select id="sortDistance">
+      <option value="">Sort by Distance</option>
+      <option value="asc">Shortest Distance</option>
+      <option value="desc">Longest Distance</option>
+    </select>
+
+    <select id="hospitalType">
+      <option value="">All Types</option>
+      <option value="Government">Government</option>
+      <option value="Private">Private</option>
+    </select>
+
+    <select id="availability">
+      <option value="">All Availability</option>
+      <option value="Beds Available">Beds Available</option>
+      <option value="Limited">Limited</option>
+      <option value="Full">Full</option>
+    </select>
+
+    <button class="btn btn-primary" id="applyFilters"><i class="fas fa-check"></i> Apply</button>
+    <button class="btn btn-danger" id="removeFilters"><i class="fas fa-times"></i> Clear</button>
+
+  </div>
+</div>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="container">
+    <h1>Find Hospitals in Kolhapur</h1>
+    <p>Live bed updates with emergency contact and verified data.</p>
+  </div>
+</section>
+
+<!-- Hospital List -->
+<section id="results" class="results-section">
+  <div class="container">
+    <div id="hospitalList"></div>
+    <div id="map"></div>
+    <p id="countdown" class="text-center mt-2">Next bed update in <span id="timer">30</span> sec...</p>
+  </div>
+</section>
+
+<!-- User Modal -->
+<div class="modal fade" id="userModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">User Login / Register</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <form>
+          <div class="mb-3"><label>Email</label><input type="email" class="form-control" required></div>
+          <div class="mb-3"><label>Password</label><input type="password" class="form-control" required></div>
+          <button type="submit" class="btn btn-primary w-100 mb-2">Login</button>
+          <button type="button" class="btn btn-outline-primary w-100">Register</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Admin Modal -->
+<div class="modal fade" id="adminModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-dark text-white"><h5 class="modal-title"><i class="fas fa-user-shield"></i> Admin Panel</h5><button class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <form>
+          <div class="row g-3">
+            <div class="col-md-6"><label>Username</label><input type="text" class="form-control" required></div>
+            <div class="col-md-6"><label>Password</label><input type="password" class="form-control" required></div>
+          </div>
+          <button type="submit" class="btn btn-primary mt-3">Login</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Details Modal -->
+<div class="modal fade" id="detailsModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="detailTitle"></h5>
+        <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="detailBody"></div>
+    </div>
+  </div>
+</div>
+
+<footer><p>&copy; 2025 MediLocator | Smart Healthcare Finder</p></footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script type="module" src="js/firebase-config.js"></script>
+
+<script>
+// --------------------------------------
+// Your hospital data
+// --------------------------------------
+const hospitals = [
+  { name: "Chhatrapati Pramilaraje Hospital", type: "Government", availability: "Beds Available", bedType: "General", beds: 120, oxygenBeds: 30, icuBeds: 20, features: ["24x7 Emergency", "Blood Bank"], lat: 16.7055, lng: 74.2441},
+  { name: "Starcare Multispeciality", type: "Private", availability: "Limited", bedType: "ICU", beds: 40, oxygenBeds: 10, icuBeds: 5, features: ["Pharmacy", "Ambulance"], lat: 16.7090, lng: 74.2370 },
+  { name: "Apex Hospital", type: "Private", availability: "Beds Available", bedType: "Oxygen", beds: 60, oxygenBeds: 15, icuBeds: 8, features: ["X-Ray", "Pharmacy"], lat: 16.7078, lng: 74.2502 },
+  { name: "Apple Saraswati Hospital", type: "Private", availability: "Beds Available", bedType: "General", beds: 80, oxygenBeds: 20, icuBeds: 12, features: ["Lab", "ICU"], lat: 16.7115, lng: 74.2468 },
+  { name: "D.Y. Patil Hospital", type: "Private", availability: "Full", bedType: "ICU", beds: 0, oxygenBeds: 0, icuBeds: 0, features: ["Medical College", "Emergency"], lat: 16.7008, lng: 74.2585 }
+];
+
+let map;
+let userLocation = null;
+let directionsService;
+let directionsRenderer;
+
+// --------------------------------------
+// Initialize Map
+// --------------------------------------
+function initMap() {
+  const kolhapur = { lat: 16.7050, lng: 74.2433 };
+  map = new google.maps.Map(document.getElementById("map"), { zoom: 13, center: kolhapur });
+
+  // Directions API
+  directionsService = new google.maps.DirectionsService();
+  directionsRenderer = new google.maps.DirectionsRenderer();
+  directionsRenderer.setMap(map);
+
+  // User location
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(pos => {
+      userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+
+      new google.maps.Marker({
+        position: userLocation,
+        map,
+        title: "You",
+        icon: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png"
+      });
+    });
+  }
+
+  hospitals.forEach(h => {
+    const marker = new google.maps.Marker({
+      position: { lat: h.lat, lng: h.lng },
+      map,
+      title: h.name
+    });
+    marker.addListener("click", () => showDetails(h.name));
+  });
+
+  displayHospitals(hospitals);
+}
+window.initMap = initMap;
+
+// --------------------------------------
+// Display Hospital Cards
+// --------------------------------------
+function displayHospitals(list) {
+  const container = document.getElementById("hospitalList");
+  container.innerHTML = "";
+  list.forEach(h => {
+    const badgeClass = h.availability === "Beds Available" ? "bg-success" :
+                       h.availability === "Limited" ? "bg-warning text-dark" : "bg-danger";
+
+    container.innerHTML += `
+      <div class="card hospital-card p-3">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <h5 class="fw-bold mb-1">${h.name}</h5>
+            <small class="text-muted">${h.type}</small><br>
+            <span class="badge ${badgeClass}">${h.availability}</span><br>
+          </div>
+          <div>
+            <button class="btn btn-outline-primary btn-sm me-2" onclick="showDetails('${h.name}')">View</button>
+            <button class="btn btn-primary btn-sm" onclick="getRoute(${h.lat}, ${h.lng})">Route</button>
+          </div>
+        </div>
+      </div>`;
+  });
+}
+
+// --------------------------------------
+// Details Modal
+// --------------------------------------
+function showDetails(name) {
+  const h = hospitals.find(x => x.name === name);
+  if (!h) return;
+  document.getElementById("detailTitle").innerText = h.name;
+  document.getElementById("detailBody").innerHTML = `
+    <p><strong>Type:</strong> ${h.type}</p>
+    <p><strong>Availability:</strong> ${h.availability}</p>
+    <p><strong>Total Beds:</strong> ${h.beds}</p>
+    <p><strong>Oxygen Beds:</strong> ${h.oxygenBeds}</p>
+    <p><strong>ICU Beds:</strong> ${h.icuBeds}</p>
+    <p><strong>Features:</strong> ${h.features.join(", ")}</p>`;
+  new bootstrap.Modal(document.getElementById("detailsModal")).show();
+}
+
+// --------------------------------------
+// ⭐ STEP 4: Route Function (added)
+// --------------------------------------
+function getRoute(lat, lng) {
+  if (!userLocation) {
+    alert("Enable GPS to get route.");
+    return;
+  }
+
+  const request = {
+    origin: userLocation,
+    destination: { lat, lng },
+    travelMode: google.maps.TravelMode.DRIVING
+  };
+
+  directionsService.route(request, (result, status) => {
+    if (status === "OK") {
+      directionsRenderer.setDirections(result);
+    } else {
+      alert("Route not available.");
+    }
+  });
+}
+
+// --------------------------------------
+// Filters
+// --------------------------------------
+document.getElementById("filterBtn").onclick = () => {
+  const f = document.getElementById("filterContent");
+  f.style.display = f.style.display === "flex" ? "none" : "flex";
+};
+
+document.getElementById("applyFilters").onclick = () => {
+  const type = document.getElementById("hospitalType").value;
+  const avail = document.getElementById("availability").value;
+  const sort = document.getElementById("sortDistance").value;
+
+  let filtered = hospitals.filter(h =>
+    (type === "" || h.type === type) &&
+    (avail === "" || h.availability === avail)
+  );
+
+  if (sort === "asc") filtered.sort((a, b) => a.lat - b.lat);
+  else if (sort === "desc") filtered.sort((a, b) => b.lat - a.lat);
+
+  displayHospitals(filtered);
+};
+
+document.getElementById("removeFilters").onclick = () => {
+  document.getElementById("hospitalType").value = "";
+  document.getElementById("availability").value = "";
+  document.getElementById("sortDistance").value = "";
+  displayHospitals(hospitals);
+};
+
+// --------------------------------------
+// Countdown Timer
+// --------------------------------------
+let timeLeft = 30;
+setInterval(() => {
+  timeLeft--;
+  if (timeLeft <= 0) timeLeft = 30;
+  document.getElementById("timer").textContent = timeLeft;
+}, 1000);
+
+</script>
+
+<!-- Google Maps API -->
+<script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDV1XpvV3f9OQXoYZq-GuUU3m-3HSDV8_4&callback=initMap"></script>
+
+</body>
+</html>

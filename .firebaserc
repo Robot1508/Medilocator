@@ -1,0 +1,12 @@
+{
+  "projects": {
+    "default": "medi-locator-project-id"
+  },
+  "targets": {
+    "medi-locator-project-id": {
+      "hosting": {
+        "site": "medi-locator-project-id"
+      }
+    }
+  }
+}

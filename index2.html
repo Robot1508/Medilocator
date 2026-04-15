@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MediLocator - Smart Hospital Finder</title>
+
+<!-- Bootstrap + Icons + Fonts -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet" />
+
+<style>
+/* ========================
+   Original EXACT styling restored
+   ======================== */
+body {
+  font-family: "Poppins", sans-serif;
+  background: #f8f9fc;
+  color: #333;
+}
+.navbar {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+.navbar-brand { font-weight: 700; color: #fff !important; }
+.hero {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white; text-align: center; padding: 90px 0;
+}
+#map { width: 100%; height: 400px; border-radius: 20px; margin-bottom: 10px; position: relative; }
+.hospital-card {
+  border: none; border-radius: 15px;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+  margin-bottom: 15px;
+}
+.filter-bar {
+  background: #fff;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+  padding: 10px 20px;
+  position: sticky; top: 65px; z-index: 1040;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.filter-content {
+  display: none; flex-wrap: wrap; gap: 10px; margin-top: 10px;
+}
+.filter-toggle {
+  background: #6c63ff; color: white;
+  border: none; border-radius: 10px;
+  padding: 8px 18px; font-weight: 500;
+}
+footer {
+  background: linear-gradient(135deg, #343a40, #495057);
+  color: white; text-align: center; padding: 40px 0;
+}
+
+.admin-panel {
+  position: fixed;
+  right: 20px;
+  top: 90px;
+  width: 360px;
+  max-width: calc(100% - 40px);
+  background: #fff;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+  border-radius: 12px;
+  padding: 16px;
+  z-index: 2000;
+  display: none;
+}
+.admin-panel h5 { margin-bottom: 12px; }
+.small-muted { font-size: 0.85rem; color: #6c757d; }
+
+@media (max-width: 768px) {
+  .hero { padding: 60px 0; }
+  #map { height: 300px; }
+  .admin-panel { width: 92%; left: 4%; right: 4%; top: 80px; }
+}
+
+/* Floating Elements style */
+#etaPanel {
+    position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+    z-index: 10; background: #0d6efd; color: white; padding: 5px 15px;
+    border-radius: 5px; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center;
+}
+#chatbotPanel {
+    position: fixed; bottom: 90px; right: 20px; z-index: 1050;
+    width: 320px; max-width: calc(100% - 40px); background: #fff;
+    border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    display: none; flex-direction: column; overflow: hidden;
+}
+.map-tooltip {
+    position: absolute; background: white; border: 1px solid #ccc;
+    border-radius: 6px; padding: 2px 6px; font-size: 12px; font-weight: bold;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2); transform: translate(-50%, -100%);
+    margin-top: -38px; pointer-events: none; white-space: nowrap;
+}
+</style>
+</head>
+<body>
+
+<!-- Navbar (Original) -->
+<nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+  <div class="container">
+    <a class="navbar-brand" href="#"><i class="fas fa-hospital"></i> MediLocator</a>
+    <form class="d-flex mx-auto" role="search" onsubmit="event.preventDefault(); document.getElementById('searchBtn').click();">
+      <input class="form-control me-2" type="search" placeholder="Search hospitals..." aria-label="Search" id="searchInput">
+      <button class="btn btn-light" type="button" id="searchBtn"><i class="fas fa-search"></i></button>
+    </form>
+    <ul class="navbar-nav ms-auto flex-row gap-2">
+      <li class="nav-item">
+        <button class="btn btn-outline-light" id="openLoginBtn"><i class="fas fa-user"></i></button>
+      </li>
+      <li class="nav-item">
+        <button class="btn btn-outline-light" id="openAdminBtn"><i class="fas fa-user-shield"></i></button>
+      </li>
+    </ul>
+  </div>
+</nav>
+
+<!-- Filter Bar (Original) -->
+<div class="filter-bar container-fluid">
+  <button class="filter-toggle" id="filterBtn"><i class="fas fa-filter"></i> Filters</button>
+</div>
+
+<div class="container">
+  <div class="filter-content" id="filterContent">
+    <select id="sortDistance" class="form-select form-select-sm" style="width: auto;">
+      <option value="">Sort by Distance</option>
+      <option value="asc">Shortest Distance</option>
+      <option value="desc">Longest Distance</option>
+    </select>
+    <select id="hospitalType" class="form-select form-select-sm" style="width: auto;">
+      <option value="">All Types</option>
+      <option value="Government">Government</option>
+      <option value="Private">Private</option>
+    </select>
+    <select id="availability" class="form-select form-select-sm" style="width: auto;">
+      <option value="">All Availability</option>
+      <option value="Beds Available">Beds Available</option>
+      <option value="Limited">Limited</option>
+      <option value="Full">Full</option>
+    </select>
+    <button class="btn btn-primary btn-sm" id="applyFilters"><i class="fas fa-check"></i> Apply</button>
+    <button class="btn btn-danger btn-sm" id="removeFilters"><i class="fas fa-times"></i> Clear</button>
+  </div>
+</div>
+
+<!-- Hero (Original) -->
+<section class="hero">
+  <div class="container">
+    <h1>Find Hospitals in Kolhapur</h1>
+    <p>Live bed updates with emergency contact and verified data.</p>
+  </div>
+</section>
+
+<!-- Hospital List and Map (Original Dual Stack) -->
+<section id="results">
+  <div class="container pb-5">
+    <div id="hospitalList"></div>
+    <div id="map">
+       <div id="etaPanel"><div id="etaText" class="small"></div></div>
+    </div>
+    <p id="countdown" class="text-center mt-2 text-muted">Next bed update in <span id="timer">30</span> sec...</p>
+    
+    <!-- Emergency FAB placed cleanly below the map container -->
+    <div class="d-flex justify-content-center mt-4">
+        <button id="btnEmergency" class="btn btn-danger rounded-pill shadow px-4 py-2" title="Route to Nearest ICU!">
+            <i class="fas fa-truck-medical me-2"></i> EMERGENCY : ROUTE NEAREST ICU
+        </button>
+    </div>
+  </div>
+</section>
+
+<!-- Details Modal -->
+<div class="modal fade" id="detailsModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="detailTitle"></h5>
+        <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="detailBody"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Login Modal -->
+<div class="modal fade" id="loginModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-secondary text-white">
+        <h5 class="modal-title">MediLocator Login</h5>
+        <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="loginForm">
+          <div class="mb-2">
+            <label class="form-label small">Email</label>
+            <input type="email" id="loginEmail" required class="form-control" placeholder="you@example.com">
+          </div>
+          <div class="mb-2">
+            <label class="form-label small">Password</label>
+            <input type="password" id="loginPassword" required class="form-control" placeholder="password">
+          </div>
+          <div class="mb-3">
+            <label class="form-label small">Login as</label>
+            <select id="loginRole" class="form-select">
+              <option value="user">User</option>
+              <option value="admin">Hospital Authority</option>
+            </select>
+          </div>
+          <div class="d-grid gap-2">
+            <button class="btn btn-primary" type="submit">Login</button>
+          </div>
+          <p id="loginMsg" class="mt-2 text-danger text-center small"></p>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Admin Panel -->
+<div class="admin-panel" id="adminPanel">
+  <div class="d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">Admin Dashboard</h5>
+    <button class="btn btn-sm btn-outline-secondary" id="adminCloseBtn" title="Close"><i class="fas fa-times"></i></button>
+  </div>
+  <p class="small-muted">Update beds for hospitals (saved to local storage)</p>
+  <div class="mb-2"><label class="form-label small">Hospital</label><select id="adminHospital" class="form-select"></select></div>
+  <div class="mb-2"><label class="form-label small">General Beds</label><input type="number" id="adminGen" class="form-control" min="0" /></div>
+  <div class="mb-2"><label class="form-label small">Oxygen Beds</label><input type="number" id="adminOxy" class="form-control" min="0" /></div>
+  <div class="mb-2"><label class="form-label small">ICU Beds</label><input type="number" id="adminIcu" class="form-control" min="0" /></div>
+  <div class="d-grid gap-2 mt-2">
+    <button class="btn btn-success" id="adminSaveBtn">Save Changes</button>
+    <button class="btn btn-outline-danger" id="adminLogoutBtn">Logout</button>
+  </div>
+  <p id="adminMsg" class="mt-2 small text-success"></p>
+</div>
+
+<!-- Chatbot FAB -->
+<button id="openChatbot" style="position: fixed; bottom: 20px; right: 20px; z-index: 1040; background: #6f42c1; color: white; border: none; width: 60px; height: 60px; border-radius: 50%; font-size: 24px; box-shadow: 0 4px 10px rgba(111, 66, 193, 0.5);">
+    <i class="fas fa-robot"></i>
+</button>
+
+<!-- AI Chatbot Panel -->
+<div id="chatbotPanel">
+    <div style="background: #6f42c1; color: white; padding: 12px; display: flex; justify-content: space-between; align-items: center;">
+        <strong><i class="fas fa-robot"></i> MediBot</strong>
+        <button id="closeChatbot" style="background: none; border: none; color: white;"><i class="fas fa-times"></i></button>
+    </div>
+    <div id="chatBody" style="height: 250px; overflow-y: auto; padding: 15px; background: #f8f9fa;">
+        <div style="margin-bottom: 10px;">
+            <span class="badge bg-light text-dark border text-wrap text-start" style="font-size:14px; max-width: 90%;">Hi! I'm MediBot. What brings you here today? (e.g., "Chest pain", "Accident")</span>
+        </div>
+    </div>
+    <div style="padding: 10px; background: white; border-top: 1px solid #ddd; display: flex; gap: 5px;">
+        <input type="text" id="chatInput" placeholder="Type symptoms..." style="flex: 1; border: 1px solid #ccc; border-radius: 20px; padding: 5px 12px; outline: none;">
+        <button id="chatSend" style="background: #6f42c1; color: white; border: none; border-radius: 50%; width: 35px; height: 35px;"><i class="fas fa-paper-plane"></i></button>
+    </div>
+</div>
+
+<footer><p class="mb-0">&copy; 2026 MediLocator | Smart Healthcare Finder</p></footer>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Firebase Scripts -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+<!-- Separate Backend logic scripts -->
+<script type="module" src="js/app.js"></script>
+<script src="js/chatbot.js"></script>
+
+<!-- Google Maps Script -->
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDV1XpvV3f9OQXoYZq-GuUU3m-3HSDV8_4&callback=initMap" async defer></script>
+
+</body>
+</html>
