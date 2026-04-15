@@ -1,10 +1,4 @@
-❌ GitHub does NOT support `id="..."` inside code blocks
 
----
-
-## ✅ FIXED README (Copy-Paste this EXACTLY)
-
-:::writing{variant="standard" id="52961"}
 # 🚀 MediLocator — Smart Hospital Finder with Real-Time Availability
 
 > **Find nearby hospitals instantly with real-time bed availability and smart filtering.**
